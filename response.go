@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"strconv"
 )
@@ -68,7 +69,7 @@ func (r *Response) readArray() (Value, error) {
 
 	val.array = make([]Value, 0)
 	for i := 0; i < len; i++ {
-		_val, err := r.Read() // temp
+		_val, err := r.Read()
 		if err != nil {
 			return val, err
 		}
@@ -93,4 +94,21 @@ func (r *Response) readBulk() (Value, error) {
 	r.readLine()
 
 	return val, nil
+}
+
+func (r *Response) Read() (Value, error) {
+	_type, err := r.reader.ReadByte()
+	if err != nil {
+		return Value{}, err
+	}
+
+	switch _type {
+	case ARRAY:
+		return r.readArray()
+	case BULK:
+		return r.readBulk()
+	default:
+		fmt.Printf("Unknown type: %v", string(_type))
+		return Value{}, nil
+	}
 }
