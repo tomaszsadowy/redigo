@@ -14,4 +14,13 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
+	// listening to connections
+	conn, err := listen.Accept()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	defer conn.Close()
 }
