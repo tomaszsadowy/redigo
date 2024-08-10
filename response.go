@@ -112,3 +112,67 @@ func (r *Response) Read() (Value, error) {
 		return Value{}, nil
 	}
 }
+
+func (val Value) Marshal() []byte {
+	switch val.typ {
+	case "array":
+		return val.marshalArray()
+	case "bulk":
+		return val.marshalBulk()
+	case "string":
+		return val.marshalString()
+	case "null":
+		return val.marshallNull()
+	case "error":
+		return val.marshallError()
+	default:
+		return []byte{}
+	}
+}
+
+func (val Value) marshalString() []byte {
+	var bytes []byte
+	bytes = append(bytes, STRING)
+	bytes = append(bytes, val.str...)
+	bytes = append(bytes, '\r', '\n')
+
+	return bytes
+}
+
+func (val Value) marshalBulk() []byte {
+	var bytes []byte
+	bytes = append(bytes, BULK)
+	bytes = append(bytes, strconv.Itoa(len(val.bulk))...)
+	bytes = append(bytes, '\r', '\n')
+	bytes = append(bytes, val.bulk...)
+	bytes = append(bytes, '\r', '\n')
+
+	return bytes
+}
+
+func (val Value) marshalArray() []byte {
+	len := len(val.array)
+	var bytes []byte
+	bytes = append(bytes, ARRAY)
+	bytes = append(bytes, strconv.Itoa(len)...)
+	bytes = append(bytes, '\r', '\n')
+
+	for i := 0; i < len; i++ {
+		bytes = append(bytes, val.array[i].Marshal()...)
+	}
+
+	return bytes
+}
+
+func (val Value) marshallError() []byte {
+	var bytes []byte
+	bytes = append(bytes, ERROR)
+	bytes = append(bytes, val.str...)
+	bytes = append(bytes, '\r', '\n')
+
+	return bytes
+}
+
+func (val Value) marshallNull() []byte {
+	return []byte("$-1\r\n")
+}
