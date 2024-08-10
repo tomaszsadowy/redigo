@@ -56,3 +56,41 @@ func (r *Response) readInteger() (x int, n int, err error) {
 	}
 	return int(i64), n, nil
 }
+
+func (r *Response) readArray() (Value, error) {
+	val := Value{}
+	val.typ = "array"
+
+	len, _, err := r.readInteger()
+	if err != nil {
+		return val, err
+	}
+
+	val.array = make([]Value, 0)
+	for i := 0; i < len; i++ {
+		_val, err := r.Read() // temp
+		if err != nil {
+			return val, err
+		}
+
+		val.array = append(val.array, _val)
+	}
+	return val, nil
+}
+
+func (r *Response) readBulk() (Value, error) {
+	val := Value{}
+	val.typ = "bulk"
+
+	len, _, err := r.readInteger()
+	if err != nil {
+		return val, err
+	}
+
+	bulk := make([]byte, len)
+	r.reader.Read(bulk)
+	val.bulk = string(bulk)
+	r.readLine()
+
+	return val, nil
+}
