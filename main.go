@@ -23,4 +23,6 @@ func main() {
 	}
 
 	defer conn.Close()
+
+	// response code
 }
