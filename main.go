@@ -46,6 +46,18 @@ func main() {
 
 		writer := NewWriter(conn)
 
-		// handler code
+		handler, ok := Handlers[command]
+		if !ok {
+			fmt.Println("Invalid command", command)
+			writer.Write(Value{typ: "string", str: ""})
+			continue
+		}
+
+		if command == "SET" || command == "HSET" {
+			// AOF.WRITE(VALUE)
+		}
+
+		result := handler(args)
+		writer.Write(result)
 	}
 }
