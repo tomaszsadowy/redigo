@@ -53,6 +53,12 @@ The server supports basic AOF persistence. Commands that modify the data store (
    
     redis> GET mykey
     "hello"
+
+    redis DEL mykey
+    1
+
+    redis EXISTS mykey
+    0
    
     redis> HSET users u1 tomasz
     1
@@ -64,3 +70,5 @@ The server supports basic AOF persistence. Commands that modify the data store (
     1) "u1"
     2) "tomasz"
    ```
+4. Notes:
+   There are more commands, such as `INCR`, `DECR`, and more will be added continuously :)
