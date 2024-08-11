@@ -71,4 +71,5 @@ The server supports basic AOF persistence. Commands that modify the data store (
     2) "tomasz"
    ```
 4. Notes:
+
    There are more commands, such as `INCR`, `DECR`, and more will be added continuously :)
