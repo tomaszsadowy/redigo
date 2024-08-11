@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"sync"
 )
 
@@ -11,6 +12,10 @@ var Handlers = map[string]func([]Value) Value{
 	"HSET":    hset,
 	"HGET":    hget,
 	"HGETALL": hgetall,
+	"DEL":     del,
+	"EXISTS":  exists,
+	"INCR":    incr,
+	"DECR":    decr,
 }
 
 func ping(args []Value) Value {
@@ -26,7 +31,7 @@ var SETsMu = sync.RWMutex{}
 
 func set(args []Value) Value {
 	if len(args) != 2 {
-		return Value{typ: "error", str: "ERR wrong number of arguments for 'set' command"}
+		return Value{typ: "error", str: "Error... wrong no. of arguments for 'set'"}
 	}
 
 	key := args[0].bulk
@@ -41,7 +46,7 @@ func set(args []Value) Value {
 
 func get(args []Value) Value {
 	if len(args) != 1 {
-		return Value{typ: "error", str: "ERR wrong number of arguments for 'get' command"}
+		return Value{typ: "error", str: "Error... wrong no. of arguments for 'get'"}
 	}
 
 	key := args[0].bulk
@@ -120,4 +125,104 @@ func hgetall(args []Value) Value {
 	}
 
 	return Value{typ: "array", array: values}
+}
+
+func del(args []Value) Value {
+	if len(args) < 1 {
+		return Value{typ: "error", str: "ERR wrong number of arguments for 'del' command"}
+	}
+
+	deletedCount := 0
+
+	SETsMu.Lock()
+	defer SETsMu.Unlock()
+
+	for _, arg := range args {
+		key := arg.bulk
+		if _, exists := SETs[key]; exists {
+			delete(SETs, key)
+			deletedCount++
+		}
+
+		// Also check in HSETs and delete if found
+		HSETsMu.Lock()
+		if _, exists := HSETs[key]; exists {
+			delete(HSETs, key)
+			deletedCount++
+		}
+		HSETsMu.Unlock()
+	}
+
+	return Value{typ: "num", num: deletedCount}
+}
+
+func exists(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "Error... wrong no. of arguments for 'exists'"}
+	}
+
+	key := args[0].bulk
+
+	SETsMu.RLock()
+	defer SETsMu.RUnlock()
+
+	if _, ok := SETs[key]; ok {
+		return Value{typ: "num", num: 1}
+	}
+
+	return Value{typ: "num", num: 0}
+}
+
+func incr(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "Error... wrong no. of arguments for 'incr'"}
+	}
+
+	key := args[0].bulk
+
+	SETsMu.Lock()
+	defer SETsMu.Unlock()
+
+	value, ok := SETs[key]
+	if !ok {
+		SETs[key] = "1"
+		return Value{typ: "num", num: 1}
+	}
+
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		return Value{typ: "error", str: "Error... value is not an integer or is out of range"}
+	}
+
+	intValue++
+	SETs[key] = strconv.Itoa(intValue)
+
+	return Value{typ: "num", num: intValue}
+}
+
+func decr(args []Value) Value {
+	if len(args) != 1 {
+		return Value{typ: "error", str: "Error... wrong no. of arguments for 'decr'"}
+	}
+
+	key := args[0].bulk
+
+	SETsMu.Lock()
+	defer SETsMu.Unlock()
+
+	value, ok := SETs[key]
+	if !ok {
+		SETs[key] = "-1"
+		return Value{typ: "num", num: -1}
+	}
+
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		return Value{typ: "error", str: "Error... value is not an integer or out of range"}
+	}
+
+	intValue--
+	SETs[key] = strconv.Itoa(intValue)
+
+	return Value{typ: "num", num: intValue}
 }

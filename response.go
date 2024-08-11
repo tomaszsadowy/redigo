@@ -125,6 +125,8 @@ func (val Value) Marshal() []byte {
 		return val.marshallNull()
 	case "error":
 		return val.marshallError()
+	case "num":
+		return []byte(fmt.Sprintf(":%d\r\n", val.num))
 	default:
 		return []byte{}
 	}
