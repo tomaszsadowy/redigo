@@ -6,44 +6,7 @@ import (
 	"strings"
 )
 
-func main() {
-	fmt.Println("Listening using port :6379")
-
-	// creating the server
-	listen, err := net.Listen("tcp", ":6379")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	aof, err := NewAof("database.aof")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	defer aof.Close()
-
-	aof.Read(func(val Value) {
-		command := strings.ToUpper(val.array[0].bulk)
-		args := val.array[1:]
-
-		handler, ok := Handlers[command]
-		if !ok {
-			fmt.Println("Invalid command: ", command)
-			return
-		}
-
-		handler(args)
-	})
-
-	// listening to connections
-	conn, err := listen.Accept()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
+func handleConnection(conn net.Conn, aof *Aof) {
 	defer conn.Close()
 
 	for {
@@ -56,10 +19,12 @@ func main() {
 
 		if value.typ != "array" {
 			fmt.Println("Error... expected array")
+			continue
 		}
 
 		if len(value.array) == 0 {
 			fmt.Println("Error... expected array length > 0")
+			continue
 		}
 
 		command := strings.ToUpper(value.array[0].bulk)
@@ -80,5 +45,47 @@ func main() {
 
 		result := handler(args)
 		writer.Write(result)
+	}
+}
+
+func main() {
+	fmt.Println("Listening using port :6379")
+
+	// creating the server
+	listen, err := net.Listen("tcp", ":6379")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer listen.Close()
+
+	aof, err := NewAof("database.aof")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer aof.Close()
+
+	aof.Read(func(val Value) {
+		command := strings.ToUpper(val.array[0].bulk)
+		args := val.array[1:]
+
+		handler, ok := Handlers[command]
+		if !ok {
+			fmt.Println("Invalid command: ", command)
+			return
+		}
+
+		handler(args)
+	})
+
+	for {
+		conn, err := listen.Accept()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		go handleConnection(conn, aof)
 	}
 }

@@ -127,9 +127,10 @@ func hgetall(args []Value) Value {
 	return Value{typ: "array", array: values}
 }
 
+// delete a value
 func del(args []Value) Value {
 	if len(args) < 1 {
-		return Value{typ: "error", str: "ERR wrong number of arguments for 'del' command"}
+		return Value{typ: "error", str: "Error... wrong no. of arguments for 'del'"}
 	}
 
 	deletedCount := 0
@@ -144,7 +145,6 @@ func del(args []Value) Value {
 			deletedCount++
 		}
 
-		// Also check in HSETs and delete if found
 		HSETsMu.Lock()
 		if _, exists := HSETs[key]; exists {
 			delete(HSETs, key)
@@ -156,6 +156,7 @@ func del(args []Value) Value {
 	return Value{typ: "num", num: deletedCount}
 }
 
+// check if val exists
 func exists(args []Value) Value {
 	if len(args) != 1 {
 		return Value{typ: "error", str: "Error... wrong no. of arguments for 'exists'"}
